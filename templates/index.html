@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepFake Detector — ИИ-детектор подделок</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 DeepFake Detector</h1>
+            <p class="subtitle">ИИ-детектор сгенерированных изображений</p>
+        </header>
+
+        <main>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📸</div>
+                <p>Перетащите фото сюда или нажмите для выбора</p>
+                <input type="file" id="fileInput" accept="image/*" hidden>
+                <button class="btn" id="selectBtn">Выбрать фото</button>
+            </div>
+
+            <div class="preview-area" id="previewArea" style="display:none">
+                <img id="preview" alt="Preview">
+                <button class="btn btn-analyze" id="analyzeBtn">🔬 Анализировать</button>
+                <button class="btn btn-secondary" id="clearBtn">❌ Убрать</button>
+            </div>
+
+            <div class="loading" id="loading" style="display:none">
+                <div class="spinner"></div>
+                <p>ИИ анализирует изображение...</p>
+            </div>
+
+            <div class="result-area" id="resultArea" style="display:none">
+                <div class="result-card" id="resultCard">
+                    <div class="result-icon" id="resultIcon"></div>
+                    <h2 id="resultVerdict"></h2>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill"></div>
+                    </div>
+                    <p class="confidence-text" id="confidenceText"></p>
+                </div>
+                <button class="btn" id="newBtn">🔄 Проверить ещё</button>
+            </div>
+
+            <div class="error-area" id="errorArea" style="display:none">
+                <div class="error-card">
+                    <h2>⚠️ Ошибка</h2>
+                    <p id="errorMsg"></p>
+                    <button class="btn" id="retryBtn">Попробовать снова</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Проект: «ИИ-детектор DeepFake» | Дмитриев Виталий, 5 класс</p>
+        </footer>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewArea = document.getElementById('previewArea');
+        const preview = document.getElementById('preview');
+        const loading = document.getElementById('loading');
+        const resultArea = document.getElementById('resultArea');
+        const errorArea = document.getElementById('errorArea');
+
+        let selectedFile = null;
+
+        // Click to select
+        uploadArea.addEventListener('click', () => fileInput.click());
+        document.getElementById('selectBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+
+        // Drag & drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        // File selected
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) handleFile(fileInput.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Пожалуйста, выберите изображение');
+                return;
+            }
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                uploadArea.style.display = 'none';
+                previewArea.style.display = 'block';
+                resultArea.style.display = 'none';
+                errorArea.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Analyze
+        document.getElementById('analyzeBtn').addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            previewArea.style.display = 'none';
+            loading.style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch('/analyze', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                loading.style.display = 'none';
+
+                if (data.error) {
+                    errorArea.style.display = 'block';
+                    document.getElementById('errorMsg').textContent = data.error;
+                    return;
+                }
+
+                // Show result
+                resultArea.style.display = 'block';
+                const card = document.getElementById('resultCard');
+                card.style.borderColor = data.color;
+                document.getElementById('resultIcon').textContent = data.icon;
+                document.getElementById('resultVerdict').textContent = data.verdict;
+                document.getElementById('resultVerdict').style.color = data.color;
+                document.getElementById('confidenceFill').style.width = data.confidence + '%';
+                document.getElementById('confidenceFill').style.background = data.color;
+                document.getElementById('confidenceText').textContent = `Уверенность: ${data.confidence}%`;
+            } catch (err) {
+                loading.style.display = 'none';
+                errorArea.style.display = 'block';
+                document.getElementById('errorMsg').textContent = 'Ошибка соединения с сервером';
+            }
+        });
+
+        // Clear
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            selectedFile = null;
+            previewArea.style.display = 'none';
+            uploadArea.style.display = 'block';
+        });
+
+        // New check
+        document.getElementById('newBtn').addEventListener('click', () => {
+            selectedFile = null;
+            resultArea.style.display = 'none';
+            uploadArea.style.display = 'block';
+        });
+
+        // Retry
+        document.getElementById('retryBtn').addEventListener('click', () => {
+            errorArea.style.display = 'none';
+            uploadArea.style.display = 'block';
+        });
+    </script>
+</body>
+</html>

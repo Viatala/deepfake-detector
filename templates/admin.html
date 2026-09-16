@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Админ-панель — DeepFake Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+        <header>
+            <h1>⚙️ Админ-панель</h1>
+            <a href="/admin/logout" class="btn btn-small">Выйти</a>
+        </header>
+
+        <!-- Status -->
+        <div class="admin-section">
+            <h2>Статус сайта</h2>
+            <div class="status-card {% if stats.enabled %}status-on{% else %}status-off{% endif %}">
+                {% if stats.enabled %}
+                    <span class="status-dot green"></span> Сайт <strong>ВКЛЮЧЁН</strong>
+                {% else %}
+                    <span class="status-dot red"></span> Сайт <strong>ВЫКЛЮЧЕН</strong>
+                {% endif %}
+            </div>
+            <form method="POST" action="/admin/toggle" style="margin-top:10px">
+                <button class="btn {% if stats.enabled %}btn-danger{% else %}btn-success{% endif %}">
+                    {% if stats.enabled %}🚫 Выключить сайт{% else %}✅ Включить сайт{% endif %}
+                </button>
+            </form>
+        </div>
+
+        <!-- Stats -->
+        <div class="admin-section">
+            <h2>📊 Статистика</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">{{ stats.total_requests }}</div>
+                    <div class="stat-label">Всего запросов</div>
+                </div>
+                <div class="stat-card stat-real">
+                    <div class="stat-number">{{ stats.real_count }}</div>
+                    <div class="stat-label">Настоящих</div>
+                </div>
+                <div class="stat-card stat-fake">
+                    <div class="stat-number">{{ stats.fake_count }}</div>
+                    <div class="stat-label">Fake/ИИ</div>
+                </div>
+                <div class="stat-card stat-errors">
+                    <div class="stat-number">{{ stats.errors }}</div>
+                    <div class="stat-label">Ошибок</div>
+                </div>
+            </div>
+            <form method="POST" action="/admin/reset-stats" style="margin-top:10px">
+                <button class="btn btn-small btn-secondary">🔄 Сбросить статистику</button>
+            </form>
+        </div>
+
+        <!-- Logs -->
+        <div class="admin-section">
+            <h2>📋 Логи</h2>
+            <div class="logs">
+                {% for log in logs %}
+                    <div class="log-entry">
+                        <span class="log-time">{{ log.time }}</span>
+                        <span class="log-msg">{{ log.msg }}</span>
+                    </div>
+                {% endfor %}
+                {% if not logs %}
+                    <p class="no-logs">Логов пока нет</p>
+                {% endif %}
+            </div>
+            <form method="POST" action="/admin/clear-logs" style="margin-top:10px">
+                <button class="btn btn-small btn-secondary">🗑️ Очистить логи</button>
+            </form>
+        </div>
+
+        <footer>
+            <p>Uptime: {{ stats.start_time }} | Последний запрос: {{ stats.last_request or 'нет' }}</p>
+        </footer>
+    </div>
+</body>
+</html>
