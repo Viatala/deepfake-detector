@@ -15,6 +15,10 @@ app = Flask(__name__)
 app.secret_key = config.ADMIN_SECRET
 app.config["MAX_CONTENT_LENGTH"] = config.MAX_FILE_SIZE
 
+@app.route("/ping")
+def ping():
+    return jsonify({"status": "ok", "message": "DeepFake Detector работает!"})
+
 # ── Stats ──────────────────────────────────────────────
 stats = {
     "total_requests": 0,
